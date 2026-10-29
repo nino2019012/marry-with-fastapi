@@ -1,0 +1,14 @@
+# 데이터베이스 파일
+*.db
+*.sqlite3
+*.db-journal
+
+# 환경변수 및 비밀번호 파일
+.env
+*.env
+
+# Python 및 가상환경
+__pycache__/
+*.pyc
+venv/
+.venv/

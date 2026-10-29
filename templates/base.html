@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="lemonade">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}
+    기본 타이틀
+  {% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='/css/output.css') }}">
+</head>
+<body class="bg-base-100 min-h-screen flex justify-ce items-center p-8">
+  {% block content %}
+    
+  {% endblock %}
+</body>
+</html>
