@@ -15,6 +15,8 @@ from .db import *
 from .models import *
 from .security import *
 
+from .routers import users, token
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
   create_db_and_tables()
@@ -22,23 +24,8 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
-
-templates = Jinja2Templates(directory="templates")
-
-@app.post("/users")
-def create_user(user: UserCreate, session: SessionDep) -> UserPublic:
-  hashed_password = get_password_hash(user.password)
-  hashed_user = User(
-    name=user.name,
-    phone_number=user.phone_number,
-    password=hashed_password,
-    role=user.role
-  )
-  session.add(hashed_user)
-  session.commit()
-  session.refresh(hashed_user)
-  return hashed_user
+app.include_router(users.router)
+app.include_router(token.router)
 
 @app.post("/token")    
 async def login_for_access_token(
@@ -65,7 +52,7 @@ async def login_for_access_token(
   )
   return response
 
-
+'''
 @app.get("/users")
 def get_users(session: SessionDep) -> list[UserPublic]:
   users = session.exec(select(User)).all()
@@ -155,3 +142,4 @@ def read_contracts(
       "current_user": current_user,
     }
   )
+'''
