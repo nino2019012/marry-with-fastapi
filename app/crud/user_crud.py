@@ -1,4 +1,4 @@
-from sqlmodel import Session,select
+from sqlmodel import Session, select
 from ..models import User, UserCreate
 
 def create_db_user(session: Session, user: UserCreate, hashed_password: str) -> User:

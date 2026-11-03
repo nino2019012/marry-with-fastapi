@@ -3,7 +3,7 @@ from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
 import pytest
 
-from .models import User, Store
+from .models import User, Store, UserRole
 from .main import app
 from .db import get_session
 from .security import verify_password, get_password_hash, get_current_active_user
@@ -87,7 +87,70 @@ def test_login_for_access_token(session: Session, client: TestClient):
    assert "access_token" in data
    assert data["token_type"] == "bearer"
    assert data["access_token"] is not None
-   
+
+# /stores
+def test_create_store(session: Session, client: TestClient):
+  user = User(
+      name="이승욱",
+      phone_number=phone_number_plain,
+      password=password_plain,
+      role=UserRole.OWNER,
+   )
+
+  session.add(user)
+  session.commit()
+
+  payload = {
+    "name": "스타벅스 충효점",
+    "is_5_or_more_employees": False,
+    "owner_id":1
+  }
+
+  response = client.post("/stores", json=payload)
+
+  print("error:", response.json())
+
+  assert response.status_code == 200
+
+  data = response.json()
+  assert data["name"] == "스타벅스 충효점"
+  assert data["is_5_or_more_employees"] == False
+  assert data["owner_id"] == 1
+
+# token with stores
+
+def test_read_store_with_token(session: Session, client: TestClient):
+   user = User(
+         name="이승욱",
+         phone_number=phone_number_plain,
+         password=get_password_hash(password_plain),
+         role=UserRole.OWNER,
+      )
+   session.add(user)
+   session.commit()
+
+   store = Store(
+      name="스타벅스 충효점",
+      is_5_or_more_employees=False,
+      owner_id=user.id
+   )
+   session.add(store)
+   session.commit()
+
+   login_response = client.post(
+      "/token",
+      data={
+         "username": phone_number_plain,
+         "password": password_plain,
+      }
+    )
+
+   token = login_response.json()["access_token"]
+   headers = {"Authorization": f"Bearer {token}"}
+
+   response = client.get(f"/stores/{store.id}", headers=headers)
+   assert response.status_code == 200
+
 '''
 def test_login_wrong_password(session: Session, client: TestClient):
    user = User(

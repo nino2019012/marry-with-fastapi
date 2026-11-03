@@ -38,7 +38,7 @@ class StoreBase(SQLModel):
 
 class Store(StoreBase, table=True):
   id: int | None = Field(default=None, primary_key=True)
-  is_5_or_more_employee: bool = Field(default=False)
+  is_5_or_more_employees: bool = Field(default=False)
   owner_id: int = Field(foreign_key="user.id")
 
   user: User = Relationship(back_populates="stores")
@@ -46,16 +46,16 @@ class Store(StoreBase, table=True):
 
 class StorePublic(StoreBase):
   id: int
-  is_5_or_more_employee: bool
+  is_5_or_more_employees: bool
   owner_id: int
 
 class StoreCreate(StoreBase):
   owner_id: int
-  is_5_or_more_employee: bool
+  is_5_or_more_employees: bool
 
 class StoreUpdate(SQLModel):
   name: str | None = None
-  is_5_or_more_employee: bool | None = None
+  is_5_or_more_employees: bool | None = None
 
 # ------ Contract ------
 

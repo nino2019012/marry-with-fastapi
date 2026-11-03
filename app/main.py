@@ -15,7 +15,7 @@ from .db import *
 from .models import *
 from .security import *
 
-from .routers import users, token
+from .routers import users, token, stores
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -26,31 +26,7 @@ app = FastAPI(lifespan=lifespan)
 
 app.include_router(users.router)
 app.include_router(token.router)
-
-@app.post("/token")    
-async def login_for_access_token(
-  form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-  session: SessionDep):
-  # db 데이터와 form 데이터 비교후 user 객체 가져옴
-  user = authenticate_user(form_data.username, form_data.password, session)
-  if not user:
-    raise HTTPException(
-      status_code=status.HTTP_401_UNAUTHORIZED,
-      detail="Incorrect username or password",
-      headers={"WWW-Authenticate": "Bearer"},
-      )
-  access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-  access_token = create_access_token(
-    data={"sub": user.phone_number}, expires_delta=access_token_expires
-  )
-  response = RedirectResponse(url="/stores", status_code=status.HTTP_303_SEE_OTHER)
-  response.set_cookie(
-    key="access_token",
-    value=f"Bearer {access_token}",
-    httponly=True,
-    samesite="lax"
-  )
-  return response
+app.include_router(stores.router)
 
 '''
 @app.get("/users")
