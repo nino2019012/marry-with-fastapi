@@ -14,5 +14,5 @@ def create_db_user(session: Session, user: UserCreate, hashed_password: str) -> 
   return db_user
 
 def get_user_by_phone_number(session: Session, phone_number: str) -> User | None:
-  statement = select(User).where(phone_number == phone_number)
+  statement = select(User).where(User.phone_number == phone_number)
   return session.exec(statement=statement).first()

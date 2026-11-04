@@ -6,6 +6,7 @@ import jwt
 from jwt.exceptions import InvalidTokenError
 from typing import Annotated
 from fastapi import Depends, Cookie, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
 
 from .db import SessionDep
 from .models import *
@@ -58,20 +59,17 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
   encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
   return encoded_jwt
 
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
+
 async def get_current_user(
     session: SessionDep,
-    access_token: Annotated[str, Cookie()] = None
+    token: Annotated[str, Depends(oauth2_scheme)]
 ):
   credentials_exception = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,
     detail="Could not validate credentials",
     headers={"WWW-Authenticate": "Bearer"}
   )
-
-  if access_token is None:
-    raise credentials_exception
-
-  token = access_token.removeprefix("Bearer ")
 
   try:
     payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
@@ -86,6 +84,7 @@ async def get_current_user(
   if user is None:
     raise credentials_exception
   return user
+
 
 async def get_current_active_user(
     current_user: Annotated[User, Depends(get_current_user)]

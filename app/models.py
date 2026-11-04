@@ -50,7 +50,7 @@ class StorePublic(StoreBase):
   owner_id: int
 
 class StoreCreate(StoreBase):
-  owner_id: int
+  #owner_id: int => store를 만들 때 토큰에서 user_id를 넣음
   is_5_or_more_employees: bool
 
 class StoreUpdate(SQLModel):

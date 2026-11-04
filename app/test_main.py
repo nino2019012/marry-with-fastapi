@@ -36,7 +36,6 @@ def client_fixture(session: Session):
 
 
 # /users
-
 def test_create_user(session: Session, client: TestClient):
    payload = {
       "name":"이승욱",
@@ -63,7 +62,6 @@ def test_create_user(session: Session, client: TestClient):
    assert verify_password(payload["password"], db_user.password)
 
 # /token
-
 def test_login_for_access_token(session: Session, client: TestClient):
    user = User(
          name="이승욱",
@@ -88,37 +86,7 @@ def test_login_for_access_token(session: Session, client: TestClient):
    assert data["token_type"] == "bearer"
    assert data["access_token"] is not None
 
-# /stores
-def test_create_store(session: Session, client: TestClient):
-  user = User(
-      name="이승욱",
-      phone_number=phone_number_plain,
-      password=password_plain,
-      role=UserRole.OWNER,
-   )
-
-  session.add(user)
-  session.commit()
-
-  payload = {
-    "name": "스타벅스 충효점",
-    "is_5_or_more_employees": False,
-    "owner_id":1
-  }
-
-  response = client.post("/stores", json=payload)
-
-  print("error:", response.json())
-
-  assert response.status_code == 200
-
-  data = response.json()
-  assert data["name"] == "스타벅스 충효점"
-  assert data["is_5_or_more_employees"] == False
-  assert data["owner_id"] == 1
-
-# token with stores
-
+# get stores
 def test_read_store_with_token(session: Session, client: TestClient):
    user = User(
          name="이승욱",
@@ -151,131 +119,78 @@ def test_read_store_with_token(session: Session, client: TestClient):
    response = client.get(f"/stores/{store.id}", headers=headers)
    assert response.status_code == 200
 
-'''
-def test_login_wrong_password(session: Session, client: TestClient):
+# token을 통한 가게들 보이기
+def test_read_stores_with_tokens(session: Session, client: TestClient):
    user = User(
       name="이승욱",
       phone_number=phone_number_plain,
       password=get_password_hash(password_plain),
-      role="OWNER"
+      role=UserRole.OWNER,
    )
-   session.add(user)
-   session.commit()
-
-   response = client.post("/token", data={
-      "username": phone_number_plain, "password": "wrong_password"}
-      )
-
-   assert response.status_code == 401
-   assert response.json()["detail"] == "Incorrect username or password"
-   assert response.headers["WWW-Authenticate"] == "Bearer"
-
-def test_access_protected_route_with_cookie(session: Session, client: TestClient):
-   password_plain="6940"
-   user = User(
-      name="이승욱",
-      phone_number="01086057662",
-      password=get_password_hash(password_plain),
-      role="OWNER",
-   )
-   session.add(user)
-   session.commit()
-
-   login_data = {"username": "01086057662", "password": "6940"}
-   login_response = client.post("/token", data=login_data, follow_redirects=False)
-   assert login_response.status_code == 303
-
-   response = client.get("/stores")
-   assert response.status_code == 200
-
-def test_access_protected_route_without_cookie(client: TestClient, session: Session):
-   response = client.get("/stores")
-   assert response.status_code == 401
-
-
-
-
-# /stores/{store_id}/contracts
-
-def test_read_contracts_success(session: Session, client: TestClient):
-   plain_password = "6940"
-   owner = User(
-         name="이승욱",
-         phone_number="01086057662",
-         password=get_password_hash(plain_password),
-         role="OWNER"
-      )
-   session.add(owner)
-   session.commit()
-   session.refresh(owner)
-
-   store = Store(name="스타벅스 충효점", owner_id=owner.id)
-   session.add(store)
-   session.commit()
-   session.refresh(store)
-
-   def override_get_current_active_user():
-      return owner
-
-   app.dependency_overrides[get_current_active_user] = override_get_current_active_user
-
-   response = client.get(f"/stores/{store.id}/contracts")
-   assert response.status_code == 200
-
-
-def test_read_contracts_store_not_found(session: Session, client: TestClient):
-   plain_password = "6940"
-   owner = User(
-          name="이승욱",
-          phone_number="01086057662",
-          password=get_password_hash(plain_password),
-          role="OWNER"
-     )
-   
-   def override():
-      return User()
-   
-   app.dependency_overrides[get_current_active_user] = override
-
-   response = client.get("/stores/99999/contracts")
-   assert response.status_code == 404
-   assert response.json()["detail"] == "Store not found"
-
-
-def test_read_contracts_forbidden(session: Session, client: TestClient):
-   plain_password = "6940"
-   owner = User(
-          name="이승욱",
-          phone_number="01086057662",
-          password=get_password_hash(plain_password),
-          role="OWNER"
-     )
    other_user = User(
-          name="다른사람",
-          phone_number="01012345678",
-          password=get_password_hash("1234"),
-          role="OWNER"
-    )
-
-   session.add_all([owner, other_user])
-   session.commit()
-   session.refresh(owner)
-   session.refresh(other_user)
-
-   store = Store(
-      name="스타벅스 충효점",
-      owner_id=other_user.id
+      name="다른 사장",
+      phone_number="01099998888",
+      password=get_password_hash(password_plain),
+      role=UserRole.OWNER,
    )
-   session.add(store)
+   session.add_all([user, other_user])
    session.commit()
-   session.refresh(store)
 
-   def override_get_current_user():
-      return owner
+   store1 = Store(name="스타벅스 충효점", is_5_or_more_employees=False, owner_id=user.id)
+   store2 = Store(name="스타벅스 터미널점", is_5_or_more_employees=True, owner_id=user.id)
 
-   app.dependency_overrides[get_current_active_user] = override_get_current_user
+   other_store = Store(name="투썸플레이스", is_5_or_more_employees=False, owner_id=other_user.id)
 
-   response = client.get(f"/stores/{store.id}/contracts")
-   assert response.status_code == 403
+   session.add_all([store1, store2, other_store])
+   session.commit()
 
-'''
+   login_response = client.post(
+      "/token",
+      data={
+         "username": phone_number_plain,
+         "password": password_plain
+      }
+   )
+   token = login_response.json()["access_token"]
+   headers = {"Authorization": f"Bearer {token}"}
+
+   response = client.get("/stores", headers=headers)
+
+   assert response.status_code == 200
+   data = response.json()
+   assert data[0]["name"] == "스타벅스 충효점"
+   assert data[1]["name"] == "스타벅스 터미널점"
+
+def test_create_store_with_token(session: Session, client: TestClient):
+  user = User(
+      name="이승욱",
+      phone_number=phone_number_plain,
+      password=get_password_hash(password_plain),
+      role=UserRole.OWNER,
+  )
+  session.add(user)
+  session.commit()
+
+  login_response = client.post(
+     "/token",
+     data={
+        "username": phone_number_plain,
+        "password": password_plain,
+     }
+  )
+  token = login_response.json()["access_token"]
+  headers = {"Authorization": f"Bearer {token}"}
+
+  response = client.post(
+     "/stores",
+     json={
+        "name":"스타벅스 보문점",
+        "is_5_or_more_employees": True
+     },
+     headers=headers
+  )
+
+  assert response.status_code == 200
+  data = response.json()
+  assert data["name"] == "스타벅스 보문점"
+  assert data["owner_id"] == user.id

@@ -11,6 +11,7 @@ router = APIRouter(
   tags=["users"],
 )
 
+#회원가입
 @router.post("", response_model=UserPublic)
 def create_user(user: UserCreate, session: SessionDep) -> UserPublic:
   return create_user_service(session=session, user=user)

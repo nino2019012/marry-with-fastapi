@@ -10,6 +10,7 @@ router = APIRouter(
   tags=["token"],
 )
 
+#로그인
 @router.post("")
 def login_for_access_token(
   form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
